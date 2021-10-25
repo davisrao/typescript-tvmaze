@@ -4,13 +4,20 @@ import * as $ from 'jquery';
 const $showsList = $("#showsList");
 const $episodesArea = $("#episodesArea");
 const $searchForm = $("#searchForm");
+const DEFAULT_SHOW_IMG: string = "https://tinyurl.com/tv-missing"
 
 /**interface for single show data */
 interface ShowInterface {
   id: number;
   name: string;
   summary: string;
-  image: {original:string};
+  image: { original?: string };
+}
+interface EpisodeInterface {
+  id: number,
+  name: string,
+  season: number,
+  number: number
 }
 
 /** Given a search term, search for tv shows that match that query.
@@ -24,14 +31,15 @@ async function getShowsByTerm(term: string): Promise<ShowInterface[]> {
   // ADD: Remove placeholder & make request to TVMaze search shows API.
   const apiUrl: string = `https://api.tvmaze.com/search/shows?q=${term}`;
   const result = await axios.get(apiUrl);
-  const showData = result.data.map((res:{show:ShowInterface})=> {
+  const showData = result.data.map((res: { show: ShowInterface }) => {
     const show = res.show;
     return {
-    id: show.id,
-    name: show.name,
-    summary: show.summary,
-    image: show.image.original,
-  }});
+      id: show.id,
+      name: show.name,
+      summary: show.summary,
+      image: show.image.original || DEFAULT_SHOW_IMG,
+    }
+  });
 
   return showData
 }
@@ -39,7 +47,7 @@ async function getShowsByTerm(term: string): Promise<ShowInterface[]> {
 
 /** Given list of shows, create markup for each and to DOM */
 
-function populateShows(shows) {
+function populateShows(shows: ShowInterface[]) {
   $showsList.empty();
 
   for (let show of shows) {
@@ -71,7 +79,7 @@ function populateShows(shows) {
  */
 
 async function searchForShowAndDisplay() {
-  const term = $("#searchForm-term").val();
+  const term = $("#searchForm-term").val() as string;
   const shows = await getShowsByTerm(term);
 
   $episodesArea.hide();
@@ -88,7 +96,22 @@ $searchForm.on("submit", async function (evt) {
  *      { id, name, season, number }
  */
 
-// async function getEpisodesOfShow(id) { }
+
+
+async function getEpisodesOfShow(id: number): Promise<EpisodeInterface[]> {
+  const apiUrl = `https://api.tvmaze.com/shows/${id}/episodes`;
+  const res = await axios.get(apiUrl);
+  const data = await res.data;
+  const result = data.map((d:EpisodeInterface) => { 
+    return{
+      id:d.id, 
+      name:d.name, 
+      season:d.season, 
+      number:d.number} 
+    });
+    return result;
+} //Question: Why do we have two return statements?
+
 
 /** Write a clear docstring for this function... */
 
